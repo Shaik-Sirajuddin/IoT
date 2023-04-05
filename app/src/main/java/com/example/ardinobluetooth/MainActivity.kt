@@ -6,18 +6,17 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ardinobluetooth.databinding.ActivityMainBinding
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-
 
 class MainActivity : AppCompatActivity() {
     private lateinit var connectButton: Button
@@ -26,6 +25,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var binding: ActivityMainBinding
     private val MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    private lateinit var textToSpeech: TextToSpeech
     var message = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,11 +33,23 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         connectButton = this.findViewById(R.id.connectButton)
         result = this.findViewById(R.id.resultText)
+        textToSpeech = TextToSpeech(
+            applicationContext
+        ) { i ->
+            // if No error is found then only it will run
+            if (i != TextToSpeech.ERROR) {
+                // To Choose language of speech
+                textToSpeech.language = Locale.UK
+            }
+
+        }
         connectButton.setOnClickListener {
             connectToBT()
         }
     }
-
+    fun speak(text:String){
+        textToSpeech.speak(text,TextToSpeech.QUEUE_FLUSH,null,null)
+    }
     @SuppressLint("MissingPermission")
     private fun connectToBT() {
         initData()
@@ -50,7 +62,9 @@ class MainActivity : AppCompatActivity() {
                 initializeConnection(device)
             }
         }
+
     }
+
 
     @SuppressLint("MissingPermission")
     private fun initializeConnection(device: BluetoothDevice) {
@@ -73,6 +87,9 @@ class MainActivity : AppCompatActivity() {
     // Read data from Bluetooth device
     private fun readData(socket: BluetoothSocket) {
         Log.d("bt", "connected")
+        runOnUiThread {
+            Toast.makeText(this,"Bluetooth Connected",Toast.LENGTH_SHORT).show()
+        }
         val inputStream = socket.inputStream
         val buffer = ByteArray(1024)
         var bytes: Int
@@ -103,23 +120,86 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateData(data: String) {
-        val value: Int? = data.toIntOrNull() ?: return
+        if (data.isEmpty()) return;
+        val value = data.get(0)
         var displayText = ""
         displayText = when (value) {
-            0 -> {
-                "I am from hr"
+            'a' -> {
+                "hello"
             }
-            1 -> {
-                "I need help"
+            'b' -> {
+                "give me water"
+            }
+            'c' -> {
+                "thank you"
+            }
+            'd' -> {
+                "i want to play"
+            }
+            'e' -> {
+                "after coming"
+            }
+            'f' -> {
+                "give me some snacks"
+            }
+            'g' -> {
+                "okay"
+            }
+            'h' -> {
+                "yummy!"
+            }
+            'i' -> {
+                "i will be back"
+            }
+            'j' -> {
+                "after coming"
+            }
+            'k' -> {
+                "it is delicious"
+            }
+            'l' -> {
+                "after eating"
+            }
+            'm' -> {
+                "sure"
+            }
+            'n' -> {
+                "turn off lights"
+            }
+            'o' -> {
+                "tomorrow is holiday"
+            }
+            'p' -> {
+                "good friday"
+            }
+            'q' -> {
+                "good night"
+            }
+            'r' -> {
+                "sweet dreams"
+            }
+            's' -> {
+                "i want food"
+            }
+            't' -> {
+                "i am happy"
+            }
+            'u' -> {
+                "i am sad"
+            }
+            'v' -> {
+                "i am angry"
+            }
+            'w' -> {
+                "emergency"
             }
             else -> {
-                "I don't know"
+                ""
             }
         }
         runOnUiThread {
+            speak(displayText)
             binding.resultText.text = displayText
         }
     }
-
-
 }
