@@ -14,15 +14,18 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ardinobluetooth.databinding.ActivityMainBinding
 import java.io.IOException
+import java.io.OutputStream
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
+
     private lateinit var connectButton: Button
     private lateinit var result: TextView
     private lateinit var bluetoothManager: BluetoothManager
     private lateinit var bluetoothAdapter: BluetoothAdapter
+    private lateinit var bluetoothSocket: BluetoothSocket
     private lateinit var binding: ActivityMainBinding
     private val MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     private lateinit var textToSpeech: TextToSpeech
@@ -46,10 +49,32 @@ class MainActivity : AppCompatActivity() {
         connectButton.setOnClickListener {
             connectToBT()
         }
+        binding.first.setOnClickListener {
+            setSelection("M")
+        }
+        binding.second.setOnClickListener {
+            setSelection("F")
+        }
+        binding.third.setOnClickListener {
+            setSelection("H")
+        }
     }
-    fun speak(text:String){
-        textToSpeech.speak(text,TextToSpeech.QUEUE_FLUSH,null,null)
+
+    private fun setSelection(mode: String) {
+        if (bluetoothSocket.isConnected) {
+            val outputStream: OutputStream = bluetoothSocket.outputStream
+            outputStream.write(mode.toByteArray())
+            outputStream.close()
+        } else {
+            Toast.makeText(this, "Bluetooth not connected", Toast.LENGTH_SHORT).show()
+        }
+
     }
+
+    private fun speak(text: String) {
+        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+    }
+
     @SuppressLint("MissingPermission")
     private fun connectToBT() {
         initData()
@@ -69,7 +94,7 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private fun initializeConnection(device: BluetoothDevice) {
         try {
-            val bluetoothSocket =
+            bluetoothSocket =
                 device.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
             bluetoothSocket.connect()
             val executor: ExecutorService = Executors.newSingleThreadExecutor()
@@ -77,7 +102,6 @@ class MainActivity : AppCompatActivity() {
             executor.execute {
                 readData(bluetoothSocket)
             }
-
 
         } catch (e: IOException) {
             e.printStackTrace()
@@ -88,7 +112,7 @@ class MainActivity : AppCompatActivity() {
     private fun readData(socket: BluetoothSocket) {
         Log.d("bt", "connected")
         runOnUiThread {
-            Toast.makeText(this,"Bluetooth Connected",Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Bluetooth Connected", Toast.LENGTH_SHORT).show()
         }
         val inputStream = socket.inputStream
         val buffer = ByteArray(1024)
