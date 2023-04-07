@@ -5,6 +5,8 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -19,6 +21,7 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var connectButton: Button
@@ -29,13 +32,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     private lateinit var textToSpeech: TextToSpeech
+    private lateinit var teluguSpeech: TextToSpeech
+    private var isEnglish = true
     var message = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        supportActionBar?.hide()
         connectButton = this.findViewById(R.id.connectButton)
         result = this.findViewById(R.id.resultText)
+
         textToSpeech = TextToSpeech(
             applicationContext
         ) { i ->
@@ -46,25 +53,64 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
+
+        teluguSpeech = TextToSpeech(
+            applicationContext
+        ) { i ->
+            // if No error is found then only it will run
+            if (i != TextToSpeech.ERROR) {
+                val telugu = Locale("te", "IN")
+                // To Choose language of speech
+                teluguSpeech.language = telugu
+            }
+        }
+
         connectButton.setOnClickListener {
             connectToBT()
         }
+
         binding.first.setOnClickListener {
-            setSelection("M")
+            setSelection("H")
         }
         binding.second.setOnClickListener {
             setSelection("F")
         }
         binding.third.setOnClickListener {
-            setSelection("H")
+            setSelection("M")
+        }
+
+        binding.telugu.setOnClickListener {
+            isEnglish = false
+            setLanguage()
+        }
+        binding.english.setOnClickListener {
+            isEnglish = true
+            setLanguage()
+        }
+    }
+
+
+    private fun setLanguage(){
+
+        val notSelected = ColorStateList.valueOf(Color.parseColor("#3F51B5"))
+        val selected = ColorStateList.valueOf(Color.parseColor("#000000"))
+
+        if(isEnglish){
+            binding.english.backgroundTintList  = selected
+            binding.telugu.backgroundTintList = notSelected
+        }
+        else{
+            binding.english.backgroundTintList  = notSelected
+            binding.telugu.backgroundTintList = selected
         }
     }
 
     private fun setSelection(mode: String) {
+
         if (bluetoothSocket.isConnected) {
             val outputStream: OutputStream = bluetoothSocket.outputStream
             outputStream.write(mode.toByteArray())
-            outputStream.close()
+            //outputStream.close()
         } else {
             Toast.makeText(this, "Bluetooth not connected", Toast.LENGTH_SHORT).show()
         }
@@ -72,7 +118,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun speak(text: String) {
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        if(isEnglish){
+            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+        else{
+            teluguSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -119,6 +170,7 @@ class MainActivity : AppCompatActivity() {
         var bytes: Int
         while (true) {
             try {
+                //  Log.d("hi")
                 bytes = inputStream.read(buffer)
                 val data = String(buffer, 0, bytes)
                 if (data.isNotEmpty()) {
@@ -142,12 +194,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
     }
-
-    private fun updateData(data: String) {
-        if (data.isEmpty()) return;
-        val value = data.get(0)
-        var displayText = ""
-        displayText = when (value) {
+    private fun getTeluguString(value : Char) : String{
+        return   when(value){
+            else -> {
+                ""
+            }
+        }
+    }
+    private fun getEnglishString(value : Char): String {
+        val result = when (value) {
             'a' -> {
                 "hello"
             }
@@ -217,10 +272,72 @@ class MainActivity : AppCompatActivity() {
             'w' -> {
                 "emergency"
             }
+            'A' -> {
+                "hello"
+            }
+            'B' -> {
+                "chill guys"
+            }
+            'C' -> {
+                "let's play"
+            }
+            'D' -> {
+                "let's go out"
+            }
+            'E' -> {
+                "i will beat you"
+            }
+            'F' -> {
+                "happy guys"
+            }
+            'G' -> {
+                "good news guys"
+            }
+            'H' -> {
+                "useless fellows "
+            }
+            'I' -> {
+                "i won't come  "
+            }
+            'J' -> {
+                "i am hungry"
+            }
+            'K' -> {
+                "i will leave"
+            }
+            'L' -> {
+                "excuse me"
+            }
+            'M' -> {
+                "how much it costs?"
+            }
+            'N' -> {
+                "can you decrease price"
+            }
+            'O' -> {
+                "all fruits are fresh?"
+            }
+            'P' -> {
+                "i won't like it"
+            }
             else -> {
                 ""
             }
         }
+        return result
+    }
+    private fun updateData(data: String) {
+
+        if (data.isEmpty()) return;
+
+        val value = data[0]
+
+        val displayText = if(isEnglish){
+            getEnglishString(value)
+        } else{
+            getTeluguString(value)
+        }
+
         runOnUiThread {
             speak(displayText)
             binding.resultText.text = displayText
